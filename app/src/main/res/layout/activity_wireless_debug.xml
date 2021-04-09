@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingTop="12dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginVertical="2dp"
+        android:orientation="horizontal"
+        android:weightSum="3">
+
+        <TextView
+            style="@style/TextView_DeviceStatus"
+            android:text="@string/title_device_type" />
+
+        <TextView
+            android:id="@+id/tv_device_type"
+            style="@style/TextView_DeviceStatus" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/colorPrimaryDark"
+        android:orientation="vertical"
+        android:paddingHorizontal="8dp"
+        android:padding="12dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginVertical="2dp"
+            android:orientation="horizontal">
+
+            <TextView
+                style="@style/TextView_DeviceStatus"
+                android:text="@string/title_wifi_status" />
+
+            <TextView
+                android:id="@+id/tv_wifi_connection_status"
+                style="@style/TextView_DeviceStatus"
+                android:background="@drawable/bg_button_transparent" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginVertical="2dp"
+            android:orientation="horizontal">
+
+            <TextView
+                style="@style/TextView_DeviceStatus"
+                android:text="@string/title_usb_debugging_status" />
+
+            <TextView
+                android:id="@+id/tv_usb_debug_status"
+                style="@style/TextView_DeviceStatus"
+                android:background="@drawable/bg_button_transparent" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginVertical="8dp"
+        android:background="#6fff" />
+
+
+
+    <LinearLayout
+        android:id="@+id/layout_command"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="@string/introduction_command"
+            android:textColor="@color/white" />
+
+        <TextView
+            android:id="@+id/tv_connection_command"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_marginTop="16dp"
+            android:textColor="@color/colorPrimary"
+            android:textSize="16sp" />
+
+    </LinearLayout>
+
+</LinearLayout>

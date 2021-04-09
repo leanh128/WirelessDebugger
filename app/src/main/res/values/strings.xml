@@ -1,0 +1,30 @@
+<resources>
+    <string name="app_name">Wireless Debug</string>
+    <string name="action_setting_debugger">Turn on USB Debugging</string>
+    <string name="tips_title">Tips</string>
+    <string name="tips_content">1.  Make sure computer and mobile are connecting the same network \n2.  Make sure Developer options is on \n3.  Make sure you have \"YOUR_SDK_PATH\/platform-tools\" in Environments Variables</string>
+    <string name="device_type_rooted">Rooted</string>
+    <string name="device_type_normal">Non-root</string>
+    <string name="title_device_type">Device</string>
+    <string name="title_adbd_status">ADBD</string>
+    <string name="title_wifi_status">Wifi</string>
+    <string name="title_usb_debugging_status">USB debugging</string>
+    <string name="title_wireless_debug_status">Wireless debug:</string>
+    <string name="status_developer_options_unavailable">Enable Developer options</string>
+    <string name="status_usb_debugging_unavailable">Enable USB debugging</string>
+    <string name="status_usb_debugging_enabled">Enabled</string>
+    <string name="status_wifi_not_connected">Not connected</string>
+    <string name="status_adbd_not_initalize">Fail</string>
+    <string name="status_fail">Fail</string>
+    <string name="status_good">Good</string>
+    <string name="title_dialog_alert_develop_options_disabled">Develop options is not enabled</string>
+    <string name="message_dialog_alert_develop_options_disabled">Tap 7 times on Build Number to turn on Develop options then turn on USB debugging</string>
+    <string name="button_go">Go</string>
+    <string name="title_dialog_alert_usb_debugging_disabled">USB debugging is disabled</string>
+    <string name="message_dialog_alert_usb_debugging_disabled">Turn on USB debugging inside Develop options</string>
+    <string name="requirements">Requirements</string>
+    <string name="status_wireless_connection_ready">ROCK AND ROLL!</string>
+    <string name="status_wireless_connection_not_ready">NOT READY!\nMake sure above requirements are green</string>
+    <string name="introduction_command">Open Command line tool and type this command to connect to this device</string>
+    <string name="command_adb_connect">adb connect %s</string>
+</resources>
