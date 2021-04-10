@@ -15,7 +15,7 @@
     <string name="status_usb_debugging_enabled">Enabled</string>
     <string name="status_wifi_not_connected">Not connected</string>
     <string name="status_adbd_not_initalize">Fail</string>
-    <string name="status_fail">Fail</string>
+    <string name="status_fail">Not OK</string>
     <string name="status_good">Good</string>
     <string name="title_dialog_alert_develop_options_disabled">Develop options is not enabled</string>
     <string name="message_dialog_alert_develop_options_disabled">Tap 7 times on Build Number to turn on Develop options then turn on USB debugging</string>
@@ -25,6 +25,8 @@
     <string name="requirements">Requirements</string>
     <string name="status_wireless_connection_ready">ROCK AND ROLL!</string>
     <string name="status_wireless_connection_not_ready">NOT READY!\nMake sure above requirements are green</string>
-    <string name="introduction_command">Open Command line tool and type this command to connect to this device</string>
-    <string name="command_adb_connect">adb connect %s</string>
+    <string name="introduction_command">Open Command line tool and type these commands to connect</string>
+    <string name="command_adb_connect">adb tcpip 5555\nadb connect %s</string>
+    <string name="get_ssid">get ssid</string>
+    <string name="status_wifi_connected">Connected</string>
 </resources>

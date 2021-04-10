@@ -3,10 +3,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.anle.wirelessdebug">
 
-    <uses-permission-sdk-23 android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-    <uses-permission-sdk-23 android:name="android.permission.INTERNET" />
-    <uses-permission-sdk-23 android:name="android.permission.read_preve" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"

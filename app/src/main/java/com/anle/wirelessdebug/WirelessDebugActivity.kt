@@ -3,32 +3,33 @@ package com.anle.wirelessdebug
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Typeface
 import android.net.wifi.SupplicantState
 import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.text.Spannable
+import android.text.SpannableString
+import android.text.style.StyleSpan
 import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.anle.wirelessdebug.databinding.ActivityWirelessDebugBinding
-import java.io.BufferedReader
-import java.io.InputStreamReader
+import java.io.IOException
+import java.io.InputStream
+import java.util.*
+import kotlin.concurrent.timerTask
 
 
 class WirelessDebugActivity : AppCompatActivity() {
-    companion object {
-        const val ADBD_PORT = 5555
-    }
-
     lateinit var binding: ActivityWirelessDebugBinding
+    var timer: Timer? = null
 
-    private var isRootedDevice = false
     private var isUSBDebuggingEnabled = false
-    private var isADBPortOpened = false
     private var isWifiConnected = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,31 +37,94 @@ class WirelessDebugActivity : AppCompatActivity() {
 
         binding = ActivityWirelessDebugBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.btnRefresh.setOnClickListener {
+            updateDeviceStatus()
+        }
+        binding.btnGetSsid.setOnClickListener {
+            if (!isPermissionGranted(Manifest.permission.ACCESS_FINE_LOCATION))
+                requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 10002)
+        }
+        binding.layoutWifi.setOnClickListener {
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(arrayOf(Manifest.permission.READ_PHONE_STATE), 10001)
-            }
+            val targetActivity =
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+                        Settings.ACTION_WIFI_ADD_NETWORKS
+                    else
+                        Settings.ACTION_WIFI_SETTINGS
+            startActivity(Intent(targetActivity).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            })
         }
 
+        binding.layoutUsbDebug.setOnClickListener {
+            when {
+                !Utils.isDeveloperOptionsEnabled(this@WirelessDebugActivity) ->
+                    showAlertTurnOnDevelopOptions()
+                !Utils.isUSBDebuggingEnabled(this@WirelessDebugActivity) ->
+                    showAlertTurnOnUSBDebugging()
+                Utils.isUSBDebuggingEnabled(this@WirelessDebugActivity) ->
+                    startActivity(
+                            Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS).apply {
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            })
+            }
+        }
     }
 
+    override fun onRequestPermissionsResult(
+            requestCode: Int,
+            permissions: Array<out String>,
+            grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 10002) {
+            updateDeviceStatus()
+        }
+    }
 
     override fun onResume() {
         super.onResume()
-        updateDeviceStatus()
+        releaseTimer()
+        timer = Timer().apply {
+            schedule(timerTask {
+                runOnUiThread {
+                    updateDeviceStatus()
+                    CPUChecker().start()
+                }
+            }, 0, 3000)
+        }
     }
+
+    override fun onPause() {
+        super.onPause()
+        releaseTimer()
+    }
+
+    private fun isPermissionGranted(permission: String) =
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.M
+                    ||
+                    ContextCompat.checkSelfPermission(
+                            this,
+                            permission
+                    ) == PackageManager.PERMISSION_GRANTED
 
     private fun updateDeviceStatus() {
         checkWifiConnection()
-        checkRooted()
         checkUSBDebugging()
-        val isWirelessConnectionReady = isUSBDebuggingEnabled && isADBPortOpened && isWifiConnected
+        val isWirelessConnectionReady = isUSBDebuggingEnabled && isWifiConnected
         binding.layoutCommand.visibility =
                 if (isWirelessConnectionReady) View.VISIBLE else View.INVISIBLE
         if (isWirelessConnectionReady) {
-            val ip = Utils.getIPAddress(false)
-            binding.tvConnectionCommand.text = getString(R.string.command_adb_connect, ip)
+            val ip = Utils.getIPAddress(true)
+            binding.tvConnectionCommand.text =
+                    SpannableString(getString(R.string.command_adb_connect, ip)).apply {
+                        setSpan(
+                                StyleSpan(Typeface.BOLD),
+                                length - ip.length,
+                                length,
+                                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                        )
+                    }
         }
     }
 
@@ -69,21 +133,7 @@ class WirelessDebugActivity : AppCompatActivity() {
 
         binding.tvUsbDebugStatus.apply {
             text =
-                    getString(if (isUSBDebuggingEnabled) R.string.status_good else R.string.status_fail)
-            setOnClickListener {
-                when {
-                    !Utils.isDeveloperOptionsEnabled(this@WirelessDebugActivity) ->
-                        showAlertTurnOnDevelopOptions()
-                    !Utils.isUSBDebuggingEnabled(this@WirelessDebugActivity) ->
-                        showAlertTurnOnUSBDebugging()
-                    Utils.isUSBDebuggingEnabled(this@WirelessDebugActivity) ->
-                        startActivity(
-                                Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS).apply {
-                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                                })
-                }
-            }
-
+                    getString(if (isUSBDebuggingEnabled) android.R.string.ok else R.string.status_fail)
             setTextColor(
                     ContextCompat.getColor(
                             this@WirelessDebugActivity,
@@ -121,47 +171,73 @@ class WirelessDebugActivity : AppCompatActivity() {
         }.show()
     }
 
-    private fun checkRooted() {
-        isRootedDevice = CommonUtils.isRooted(this)
-        binding.tvDeviceType.apply {
-            text =
-                    getString(if (isRootedDevice) R.string.device_type_rooted else R.string.device_type_normal)
-            setTextColor(
-                    ContextCompat.getColor(
-                            this@WirelessDebugActivity,
-                            if (isRootedDevice) R.color.colorDarkOrange else R.color.white
-
-                    )
-            )
-        }
-
-    }
 
     private fun checkWifiConnection() {
         val wifiManager = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
-
         val wifiInfo: WifiInfo = wifiManager.connectionInfo
+        isWifiConnected = wifiInfo.supplicantState == SupplicantState.COMPLETED
+        if (isWifiConnected) {
+            var wifiSSID = wifiInfo.ssid
+            Log.d("leon", "wifi SSID: $wifiSSID")
+            if (wifiSSID.startsWith("\"")) {
+                wifiSSID = wifiSSID.substring(1, wifiSSID.length - 1)
+            }
+            binding.tvWifiConnectionStatus.apply {
+                setTextColor(ContextCompat.getColor(this@WirelessDebugActivity, R.color.colorPrimary))
+                visibility = if (wifiSSID.isNullOrBlank() || wifiSSID == "<unknown ssid>") View.GONE else View.VISIBLE
+                text = wifiSSID
+            }
+            binding.btnGetSsid.visibility =
+                    if (wifiSSID.isNullOrBlank() || wifiSSID == "<unknown ssid>") View.VISIBLE else View.GONE
 
-        binding.tvWifiConnectionStatus.apply {
-            isWifiConnected = wifiInfo.supplicantState == SupplicantState.COMPLETED
-
-            text =
-                    if (isWifiConnected) wifiInfo.ssid.toString() else getString(R.string.status_wifi_not_connected)
-            setTextColor(
-                    ContextCompat.getColor(
-                            this@WirelessDebugActivity,
-                            if (isWifiConnected) R.color.colorPrimary else R.color.light_orange
-                    )
+        } else {
+            binding.tvWifiConnectionStatus.setTextColor(
+                    ContextCompat.getColor(this@WirelessDebugActivity, R.color.light_orange)
             )
-            setOnClickListener {
-                val targetActivity =
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-                            Settings.ACTION_WIFI_ADD_NETWORKS
-                        else
-                            Settings.ACTION_WIFI_SETTINGS
-                startActivity(Intent(targetActivity).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                })
+            binding.tvWifiConnectionStatus.visibility = View.VISIBLE
+            binding.btnGetSsid.visibility = View.GONE
+            binding.tvWifiConnectionStatus.text = getString(R.string.status_wifi_not_connected)
+        }
+    }
+
+    private fun startTrackingCPU() {
+        releaseTimer()
+        timer = Timer().apply {
+            scheduleAtFixedRate(
+                    timerTask {
+                        CPUChecker().start()
+                    }, 100L, 1000L
+            )
+        }
+    }
+
+    private fun releaseTimer() {
+        timer?.run {
+            cancel()
+            purge()
+        }
+        timer = null
+    }
+
+    inner class CPUChecker : Thread() {
+        override fun run() {
+            super.run()
+            try {
+//                val DATA = arrayOf("/system/bin/cat", "/proc/cpuinfo")
+                val DATA = arrayOf("ls", "/proc/st")
+                val processBuilder = ProcessBuilder(*DATA)
+                val process = processBuilder.start()
+                val inputStream: InputStream = process.inputStream
+                val byteArry = ByteArray(1024)
+                var output = ""
+                while (inputStream.read(byteArry) != -1) {
+                    output += String(byteArry)
+                }
+                inputStream.close()
+
+                Log.d("leon", "CPU_INFO: ${output}")
+            } catch (ex: IOException) {
+                ex.printStackTrace()
             }
         }
     }

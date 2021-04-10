@@ -2,6 +2,7 @@
 .gradle
 /local.properties
 /.idea
+release
 .DS_Store
 /build
 /captures

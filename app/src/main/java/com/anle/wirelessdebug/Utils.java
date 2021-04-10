@@ -140,7 +140,7 @@ public class Utils {
     }
 
     public static boolean isUSBDebuggingEnabled(Context context) {
-        return Settings.Secure.getInt(context.getContentResolver(), Settings.Global.ADB_ENABLED, 0) == 1;
+        return Settings.Global.getInt(context.getContentResolver(), Settings.Global.ADB_ENABLED, 0) == 1;
     }
 
     public static boolean isDeveloperOptionsEnabled(Context context) {

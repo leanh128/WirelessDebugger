@@ -1,69 +1,104 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:orientation="vertical"
     android:paddingTop="12dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginVertical="2dp"
-        android:orientation="horizontal"
-        android:weightSum="3">
-
-        <TextView
-            style="@style/TextView_DeviceStatus"
-            android:text="@string/title_device_type" />
-
-        <TextView
-            android:id="@+id/tv_device_type"
-            style="@style/TextView_DeviceStatus" />
-
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
         android:background="@color/colorPrimaryDark"
         android:orientation="vertical"
-        android:paddingHorizontal="8dp"
-        android:padding="12dp">
+        android:paddingHorizontal="24dp"
+        android:paddingVertical="12dp">
+
+        <ImageView
+            android:id="@+id/btn_refresh"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:background="@drawable/bg_button_transparent"
+            android:padding="4dp"
+            android:src="@android:drawable/ic_menu_rotate" />
 
         <LinearLayout
+            android:id="@+id/layout_wifi"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_margin="4dp"
             android:layout_marginVertical="2dp"
-            android:orientation="horizontal">
+            android:background="@drawable/bg_button_transparent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingVertical="4dp">
 
             <TextView
-                style="@style/TextView_DeviceStatus"
-                android:text="@string/title_wifi_status" />
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="24dp"
+                android:layout_marginEnd="24dp"
+                android:text="@string/title_wifi_status"
+                android:textColor="@color/white"
+                android:textSize="16sp" />
 
-            <TextView
-                android:id="@+id/tv_wifi_connection_status"
-                style="@style/TextView_DeviceStatus"
-                android:background="@drawable/bg_button_transparent" />
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
+
+                <TextView
+                    android:id="@+id/tv_wifi_connection_status"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="center"
+                    android:gravity="center"
+                    android:padding="8dp" />
+
+                <Button
+                    android:id="@+id/btn_get_ssid"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:text="@string/get_ssid"
+                    android:textColor="@color/white"
+                    android:textSize="14sp" />
+            </FrameLayout>
 
         </LinearLayout>
 
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginHorizontal="8dp"
+            android:alpha=".3"
+            android:background="@color/colorPrimary" />
+
         <LinearLayout
+            android:id="@+id/layout_usb_debug"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginVertical="2dp"
-            android:orientation="horizontal">
+            android:layout_margin="4dp"
+            android:background="@drawable/bg_button_transparent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingVertical="8dp">
 
             <TextView
-                style="@style/TextView_DeviceStatus"
-                android:text="@string/title_usb_debugging_status" />
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:text="@string/title_usb_debugging_status"
+                android:textColor="@color/white"
+                android:textSize="16sp" />
 
             <TextView
                 android:id="@+id/tv_usb_debug_status"
-                style="@style/TextView_DeviceStatus"
-                android:background="@drawable/bg_button_transparent" />
-
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center" />
         </LinearLayout>
-
     </LinearLayout>
 
 
@@ -75,13 +110,15 @@
         android:background="#6fff" />
 
 
-
     <LinearLayout
         android:id="@+id/layout_command"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
         android:layout_margin="16dp"
-        android:orientation="vertical">
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingBottom="32dp">
 
         <TextView
             android:layout_width="match_parent"
@@ -92,12 +129,14 @@
 
         <TextView
             android:id="@+id/tv_connection_command"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:gravity="center"
+            android:layout_gravity="center"
             android:layout_marginTop="16dp"
+            android:gravity="center"
+            android:lineSpacingExtra="12dp"
             android:textColor="@color/colorPrimary"
-            android:textSize="16sp" />
+            android:textSize="18sp" />
 
     </LinearLayout>
 
