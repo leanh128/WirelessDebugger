@@ -57,7 +57,9 @@
             android:layout_height="wrap_content"
             android:gravity="center"
             android:paddingVertical="12dp"
-            android:textColor="#eee" />
+            android:selectAllOnFocus="true"
+            android:textColor="#eee"
+            android:textIsSelectable="true" />
 
     </LinearLayout>
 
@@ -85,7 +87,9 @@
             android:layout_height="wrap_content"
             android:gravity="center"
             android:paddingBottom="12dp"
-            android:textColor="@color/white" />
+            android:selectAllOnFocus="true"
+            android:textColor="@color/white"
+            android:textIsSelectable="true" />
     </LinearLayout>
 
 

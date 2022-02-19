@@ -27,6 +27,7 @@ class CommandFragment : Fragment() {
         binding.tvDoc.setOnClickListener {
             (activity as? WirelessDebugActivity)?.swipeLeft()
         }
+        (activity as? WirelessDebugActivity)?.updateDeviceStatus()
     }
 
     fun setCommand() {

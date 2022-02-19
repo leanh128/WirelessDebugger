@@ -109,7 +109,7 @@ class WirelessDebugActivity : AppCompatActivity() {
                     permission
                 ) == PackageManager.PERMISSION_GRANTED
 
-    private fun updateDeviceStatus() {
+    fun updateDeviceStatus() {
         checkWifiConnection()
         checkUSBDebugging()
         val isWirelessConnectionReady = isUSBDebuggingEnabled && isWifiConnected
@@ -184,7 +184,7 @@ class WirelessDebugActivity : AppCompatActivity() {
                 )
                 visibility =
                     if (wifiSSID.isNullOrBlank() || wifiSSID == "<unknown ssid>") View.GONE else View.VISIBLE
-                text = wifiSSID
+                text = "<$wifiSSID>"
             }
             binding.btnGetSsid.visibility =
                 if (wifiSSID.isNullOrBlank() || wifiSSID == "<unknown ssid>") View.VISIBLE else View.GONE
