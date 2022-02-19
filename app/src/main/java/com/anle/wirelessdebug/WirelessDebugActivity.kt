@@ -3,22 +3,23 @@ package com.anle.wirelessdebug
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Typeface
 import android.net.wifi.SupplicantState
 import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.text.Spannable
-import android.text.SpannableString
-import android.text.style.StyleSpan
 import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
+import androidx.viewpager.widget.PagerAdapter
+import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.anle.wirelessdebug.databinding.ActivityWirelessDebugBinding
+import kotlinx.coroutines.*
 import java.io.IOException
 import java.io.InputStream
 import java.util.*
@@ -26,17 +27,24 @@ import kotlin.concurrent.timerTask
 
 
 class WirelessDebugActivity : AppCompatActivity() {
+    private var statusTrackerJob: Job? = null
     lateinit var binding: ActivityWirelessDebugBinding
     var timer: Timer? = null
 
     private var isUSBDebuggingEnabled = false
     private var isWifiConnected = false
+    private lateinit var commandFragment: CommandFragment
+    private lateinit var aboutFragment: AboutFragment
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         binding = ActivityWirelessDebugBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        commandFragment = CommandFragment()
+        aboutFragment = AboutFragment()
+        binding.pager.adapter = MyPagerAdapter(this)
         binding.btnRefresh.setOnClickListener {
             updateDeviceStatus()
         }
@@ -47,10 +55,10 @@ class WirelessDebugActivity : AppCompatActivity() {
         binding.layoutWifi.setOnClickListener {
 
             val targetActivity =
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-                        Settings.ACTION_WIFI_ADD_NETWORKS
-                    else
-                        Settings.ACTION_WIFI_SETTINGS
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+                    Settings.ACTION_WIFI_ADD_NETWORKS
+                else
+                    Settings.ACTION_WIFI_SETTINGS
             startActivity(Intent(targetActivity).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
             })
@@ -64,17 +72,17 @@ class WirelessDebugActivity : AppCompatActivity() {
                     showAlertTurnOnUSBDebugging()
                 Utils.isUSBDebuggingEnabled(this@WirelessDebugActivity) ->
                     startActivity(
-                            Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS).apply {
-                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                            })
+                        Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS).apply {
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        })
             }
         }
     }
 
     override fun onRequestPermissionsResult(
-            requestCode: Int,
-            permissions: Array<out String>,
-            grantResults: IntArray
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == 10002) {
@@ -84,47 +92,32 @@ class WirelessDebugActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        releaseTimer()
-        timer = Timer().apply {
-            schedule(timerTask {
-                runOnUiThread {
-                    updateDeviceStatus()
-                    CPUChecker().start()
-                }
-            }, 0, 3000)
-        }
+        cancelStatusTracker()
+        startStatusTracker()
     }
 
     override fun onPause() {
         super.onPause()
-        releaseTimer()
+        cancelStatusTracker()
     }
 
     private fun isPermissionGranted(permission: String) =
-            Build.VERSION.SDK_INT < Build.VERSION_CODES.M
-                    ||
-                    ContextCompat.checkSelfPermission(
-                            this,
-                            permission
-                    ) == PackageManager.PERMISSION_GRANTED
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.M
+                ||
+                ContextCompat.checkSelfPermission(
+                    this,
+                    permission
+                ) == PackageManager.PERMISSION_GRANTED
 
     private fun updateDeviceStatus() {
         checkWifiConnection()
         checkUSBDebugging()
         val isWirelessConnectionReady = isUSBDebuggingEnabled && isWifiConnected
-        binding.layoutCommand.visibility =
-                if (isWirelessConnectionReady) View.VISIBLE else View.INVISIBLE
-        if (isWirelessConnectionReady) {
-            val ip = Utils.getIPAddress(true)
-            binding.tvConnectionCommand.text =
-                    SpannableString(getString(R.string.command_adb_connect, ip)).apply {
-                        setSpan(
-                                StyleSpan(Typeface.BOLD),
-                                length - ip.length,
-                                length,
-                                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-                        )
-                    }
+        kotlin.runCatching {
+            commandFragment.setVisibility(isWirelessConnectionReady)
+            if (isWirelessConnectionReady) {
+                commandFragment.setCommand()
+            }
         }
     }
 
@@ -133,12 +126,12 @@ class WirelessDebugActivity : AppCompatActivity() {
 
         binding.tvUsbDebugStatus.apply {
             text =
-                    getString(if (isUSBDebuggingEnabled) android.R.string.ok else R.string.status_fail)
+                getString(if (isUSBDebuggingEnabled) android.R.string.ok else R.string.status_fail)
             setTextColor(
-                    ContextCompat.getColor(
-                            this@WirelessDebugActivity,
-                            if (Utils.isUSBDebuggingEnabled(this@WirelessDebugActivity)) R.color.colorPrimary else R.color.colorDarkOrange
-                    )
+                ContextCompat.getColor(
+                    this@WirelessDebugActivity,
+                    if (Utils.isUSBDebuggingEnabled(this@WirelessDebugActivity)) R.color.colorPrimary else R.color.colorDarkOrange
+                )
             )
         }
     }
@@ -148,7 +141,7 @@ class WirelessDebugActivity : AppCompatActivity() {
             title = getString(R.string.title_dialog_alert_usb_debugging_disabled)
             setMessage(R.string.message_dialog_alert_usb_debugging_disabled)
             setPositiveButton(
-                    R.string.button_go
+                R.string.button_go
             ) { _, _ ->
                 startActivity(Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK
@@ -162,7 +155,7 @@ class WirelessDebugActivity : AppCompatActivity() {
             title = getString(R.string.title_dialog_alert_develop_options_disabled)
             setMessage(R.string.message_dialog_alert_develop_options_disabled)
             setPositiveButton(
-                    R.string.button_go
+                R.string.button_go
             ) { _, _ ->
                 startActivity(Intent(Settings.ACTION_DEVICE_INFO_SETTINGS).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK
@@ -183,16 +176,22 @@ class WirelessDebugActivity : AppCompatActivity() {
                 wifiSSID = wifiSSID.substring(1, wifiSSID.length - 1)
             }
             binding.tvWifiConnectionStatus.apply {
-                setTextColor(ContextCompat.getColor(this@WirelessDebugActivity, R.color.colorPrimary))
-                visibility = if (wifiSSID.isNullOrBlank() || wifiSSID == "<unknown ssid>") View.GONE else View.VISIBLE
+                setTextColor(
+                    ContextCompat.getColor(
+                        this@WirelessDebugActivity,
+                        R.color.colorPrimary
+                    )
+                )
+                visibility =
+                    if (wifiSSID.isNullOrBlank() || wifiSSID == "<unknown ssid>") View.GONE else View.VISIBLE
                 text = wifiSSID
             }
             binding.btnGetSsid.visibility =
-                    if (wifiSSID.isNullOrBlank() || wifiSSID == "<unknown ssid>") View.VISIBLE else View.GONE
+                if (wifiSSID.isNullOrBlank() || wifiSSID == "<unknown ssid>") View.VISIBLE else View.GONE
 
         } else {
             binding.tvWifiConnectionStatus.setTextColor(
-                    ContextCompat.getColor(this@WirelessDebugActivity, R.color.light_orange)
+                ContextCompat.getColor(this@WirelessDebugActivity, R.color.light_orange)
             )
             binding.tvWifiConnectionStatus.visibility = View.VISIBLE
             binding.btnGetSsid.visibility = View.GONE
@@ -204,9 +203,9 @@ class WirelessDebugActivity : AppCompatActivity() {
         releaseTimer()
         timer = Timer().apply {
             scheduleAtFixedRate(
-                    timerTask {
-                        CPUChecker().start()
-                    }, 100L, 1000L
+                timerTask {
+                    CPUChecker().start()
+                }, 100L, 1000L
             )
         }
     }
@@ -217,6 +216,28 @@ class WirelessDebugActivity : AppCompatActivity() {
             purge()
         }
         timer = null
+    }
+
+
+    private fun startStatusTracker() {
+        cancelStatusTracker()
+        statusTrackerJob = CoroutineScope(Dispatchers.IO).launch {
+            while (true) {
+                delay(2000)
+                runOnUiThread {
+                    updateDeviceStatus()
+                }
+            }
+        }
+    }
+
+    private fun cancelStatusTracker() {
+        statusTrackerJob?.cancel()
+        statusTrackerJob = null
+    }
+
+    fun swipeLeft() {
+        binding.pager.currentItem = 1
     }
 
     inner class CPUChecker : Thread() {
@@ -240,5 +261,16 @@ class WirelessDebugActivity : AppCompatActivity() {
                 ex.printStackTrace()
             }
         }
+    }
+    inner class MyPagerAdapter(fa: FragmentActivity) : FragmentStateAdapter(fa) {
+
+        override fun createFragment(position: Int): Fragment {
+            return when (position) {
+                0 -> commandFragment
+                else -> aboutFragment
+            }
+        }
+
+        override fun getItemCount() = 2
     }
 }
